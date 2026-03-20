@@ -164,6 +164,16 @@ def _try_all_b64_blobs(text: str) -> list[str]:
     return links
 
 
+def _dedup(links: list[str]) -> list[str]:
+    seen = set()
+    out = []
+    for l in links:
+        key = l.split("#")[0]
+        if key not in seen:
+            seen.add(key)
+            out.append(l)
+    return out
+
 def extract_from_html(html: str) -> list[str]:
     links = []
 
@@ -384,17 +394,6 @@ def detect_and_parse(content: str | bytes, url: str = "") -> list[str]:
             pass
 
     return []
-
-
-def _dedup(links: list[str]) -> list[str]:
-    seen = set()
-    out = []
-    for l in links:
-        key = l.split("#")[0]
-        if key not in seen:
-            seen.add(key)
-            out.append(l)
-    return out
 
 
 def fetch_url(url: str):
