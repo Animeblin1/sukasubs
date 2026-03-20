@@ -1,6 +1,9 @@
 name: Update proxy list
 
 on:
+  push:
+    paths:
+      - 'subs.txt'
   schedule:
     - cron: '0 */6 * * *'
   workflow_dispatch:
