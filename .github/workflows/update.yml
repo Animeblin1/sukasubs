@@ -23,13 +23,40 @@ jobs:
 
       - run: python -m pip install --upgrade pip requests pyyaml
 
-      - run: python parse_vless.py
+      - name: Debug - probe URLs
+        run: |
+          python3 - <<'PYEOF'
+          import urllib.request, sys
 
-      - run: |
+          urls = open("subs.txt").read().splitlines()
+          urls = [u.strip() for u in urls if u.strip() and not u.startswith("#")]
+
+          for url in urls:
+              req = urllib.request.Request(url, headers={
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
+              })
+              try:
+                  with urllib.request.urlopen(req, timeout=15) as r:
+                      body = r.read(512)
+                      print(f"[PROBE] {url}")
+                      print(f"  status: {r.status}")
+                      print(f"  ct: {r.headers.get('Content-Type')}")
+                      print(f"  first 200b: {body[:200]}")
+              except Exception as e:
+                  print(f"[PROBE FAIL] {url}: {e}")
+          PYEOF
+
+      - name: Parse
+        run: python parse_vless.py
+
+      - name: Commit result
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          COUNT=$(grep -c "://" result.txt 2>/dev/null || echo 0)
           git add -f result.txt
-          git diff --staged --quiet || (git commit -m "auto: $(date -u +'%Y-%m-%d %H:%M UTC')" && git push)
+          git commit -m "auto: ${COUNT} links — $(date -u +'%Y-%m-%d %H:%M UTC')" || echo "nothing to commit"
+          git push || echo "push failed"
 
       - name: Cleanup old runs
         env:
@@ -43,7 +70,6 @@ jobs:
           token = os.environ["GH_TOKEN"]
           repo = os.environ["REPO"]
           current_run = int(os.environ["CURRENT_RUN"])
-
           headers = {
               "Authorization": f"Bearer {token}",
               "Accept": "application/vnd.github+json",
@@ -53,8 +79,7 @@ jobs:
           def gh(method, path):
               req = urllib.request.Request(
                   f"https://api.github.com{path}",
-                  headers=headers,
-                  method=method,
+                  headers=headers, method=method,
               )
               try:
                   with urllib.request.urlopen(req) as r:
