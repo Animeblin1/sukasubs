@@ -22,18 +22,75 @@ SESSION.headers.update({
 })
 
 
-def clean_link(raw_link):
+PROTO_LABELS = {
+    "vless": "", "vmess": "VMess", "trojan": "Trojan",
+    "ss": "SS", "hy2": "HY2", "hysteria2": "HY2",
+    "hysteria": "HY1", "tuic": "TUIC", "wireguard": "WG", "wg": "WG",
+}
+
+_FLAG_RE = re.compile(r"[\U0001F1E6-\U0001F1FF]{2}")
+_JUNK_RE = re.compile(
+    r"(?:\|\s*\|\s*|\s*[-–—]\s*)"       # pipe / dash separators
+    r"(?:тгк|tg|telegram|канал|channel|bot|бот|sub|подписка)\s*:?\s*@\S+",
+    re.IGNORECASE,
+)
+_HANDLE_RE = re.compile(r"@\S+")
+_TGK_RE = re.compile(
+    r"(?:\||\s)(?:тгк|tg|telegram|канал|channel)\s*:?\s*.*$",
+    re.IGNORECASE,
+)
+_NOISE_RE = re.compile(
+    r"(?:\||:)\s*(?:тгк|tg|telegram|канал|подписка|sub|bot|бот).*$",
+    re.IGNORECASE,
+)
+
+
+def _sanitize_remark(remark: str, scheme: str = "") -> str:
+    remark = unquote(remark).strip()
+    for ch in "\u200b\u200c\u200d\u00ad\ufeff":
+        remark = remark.replace(ch, "")
+    remark = remark.replace("\u00a0", " ")
+    remark = re.sub(r"\s+", " ", remark).strip()
+
+    remark = _JUNK_RE.sub("", remark)
+    remark = _TGK_RE.sub("", remark)
+    remark = _NOISE_RE.sub("", remark)
+    remark = _HANDLE_RE.sub("", remark)
+    remark = re.sub(r"\s*\|\s*$", "", remark)
+    remark = re.sub(r"\s+", " ", remark).strip()
+
+    flags = _FLAG_RE.findall(remark)
+    flag = flags[0] if flags else ""
+
+    clean = _FLAG_RE.sub("", remark).strip()
+    clean = re.sub(r"^\s*[|\-–—]\s*", "", clean).strip()
+    clean = re.sub(r"\s*[|\-–—]\s*$", "", clean).strip()
+
+    parts = [p.strip() for p in re.split(r"[|\-–—]", clean) if p.strip()]
+    label = parts[0] if parts else ""
+    label = label[:30].strip()
+
+    proto = PROTO_LABELS.get(scheme.lower(), "")
+
+    suffix_parts = [s for s in [label, proto] if s]
+    suffix = " ".join(suffix_parts)
+
+    result = (flag + " " + suffix).strip() if flag else suffix
+    result = re.sub(r"\s+", " ", result).strip()
+    return result or remark[:40]
+
+
+def clean_link(raw_link, scheme: str = ""):
+    if not scheme:
+        m = re.match(r"^([a-zA-Z0-9+\-]+)://", raw_link)
+        scheme = m.group(1) if m else ""
     if "#" not in raw_link:
         return raw_link
     base, remark_enc = raw_link.rsplit("#", 1)
     try:
-        remark = unquote(remark_enc).strip()
-        remark = re.sub(r"\s+", " ", remark)
-        remark = remark.replace("\u200b", "").replace("\u00a0", " ").replace("\u200c", "").replace("\u200d", "")
-        if len(remark) > 100:
-            remark = remark[:97] + "..."
+        remark = _sanitize_remark(remark_enc, scheme)
     except Exception:
-        remark = remark_enc
+        remark = unquote(remark_enc)[:40]
     return f"{base}#{remark}"
 
 
@@ -55,11 +112,44 @@ def extract_links_from_text(text):
         r'(?:vless|vmess|trojan|ss|hy2|hysteria2?|tuic|wireguard|wg)://[^\s\'"<>\]\[,}{]+',
         re.IGNORECASE
     )
-    return [clean_link(m.group(0).rstrip(".,;:)")) for m in pattern.finditer(text)]
+    results = []
+    for m in pattern.finditer(text):
+        raw = m.group(0).rstrip(".,;:)")
+        scheme = raw.split("://")[0].lower()
+        results.append(clean_link(raw, scheme))
+    return results
 
 
 def _qs(params):
     return "&".join(f"{k}={quote(str(v), safe='')}" for k, v in params.items() if v not in (None, ""))
+
+
+def _h3_to_tcp_link(link, suffix=" [TCP]"):
+    """If link has alpn containing h3, return a copy with alpn=h2 (TCP). Else None."""
+    from urllib.parse import urlparse, parse_qs, urlencode
+    try:
+        if "alpn=" not in link:
+            return None
+        base_part = link.split("#")[0]
+        remark = link.split("#")[1] if "#" in link else ""
+        scheme_host, _, qs = base_part.partition("?")
+        params = {}
+        for kv in qs.split("&"):
+            if "=" in kv:
+                k, v = kv.split("=", 1)
+                params[k] = v
+        alpn_raw = unquote(params.get("alpn", ""))
+        alpn_list = [a.strip() for a in re.split(r"[,\s]+", alpn_raw) if a.strip()]
+        if "h3" not in alpn_list:
+            return None
+        tcp_alpn = [a for a in alpn_list if a != "h3"] or ["h2"]
+        params["alpn"] = quote(",".join(tcp_alpn), safe="")
+        new_qs = "&".join(f"{k}={v}" for k, v in params.items())
+        new_remark = (unquote(remark) + suffix).strip() if remark else suffix.strip()
+        return f"{scheme_host}?{new_qs}#{new_remark}"
+    except Exception:
+        return None
+
 
 
 def parse_clash_yaml(text):
@@ -91,8 +181,14 @@ def parse_clash_yaml(text):
                 ws_opts = p.get("ws-opts", {}) or {}
                 grpc_opts = p.get("grpc-opts", {}) or {}
                 h2_opts = p.get("h2-opts", {}) or {}
+                xhttp_opts = p.get("xhttp-opts", {}) or {}
                 servername = p.get("servername", "") or p.get("sni", "")
                 fingerprint = p.get("client-fingerprint", "")
+                alpn_raw = p.get("alpn", [])
+                if isinstance(alpn_raw, str):
+                    alpn_list = [a.strip() for a in alpn_raw.split(",") if a.strip()]
+                else:
+                    alpn_list = list(alpn_raw) if alpn_raw else []
 
                 params = {"type": network, "encryption": "none"}
                 if flow:
@@ -108,6 +204,8 @@ def parse_clash_yaml(text):
                         params["sni"] = servername
                     if fingerprint:
                         params["fp"] = fingerprint
+                if alpn_list:
+                    params["alpn"] = ",".join(alpn_list)
                 if network == "ws":
                     params["path"] = ws_opts.get("path", "/")
                     host = (ws_opts.get("headers") or {}).get("Host", "")
@@ -121,8 +219,17 @@ def parse_clash_yaml(text):
                     hosts = h2_opts.get("host") or []
                     if hosts:
                         params["host"] = hosts[0]
+                elif network == "xhttp":
+                    params["path"] = xhttp_opts.get("path", "/")
+                    if xhttp_opts.get("host"):
+                        params["host"] = xhttp_opts["host"]
+                    if xhttp_opts.get("mode"):
+                        params["mode"] = xhttp_opts["mode"]
 
-                links.append(clean_link(f"vless://{uuid}@{server}:{port}?{_qs(params)}#{name}"))
+                links.append(clean_link(f"vless://{uuid}@{server}:{port}?{_qs(params)}#{name}", "vless"))
+                tcp_link = _h3_to_tcp_link(links[-1])
+                if tcp_link:
+                    links.append(tcp_link)
 
             elif ptype == "vmess":
                 uuid = p.get("uuid", "")
@@ -132,7 +239,10 @@ def parse_clash_yaml(text):
                 tls = p.get("tls", False)
                 ws_opts = p.get("ws-opts", {}) or {}
                 grpc_opts = p.get("grpc-opts", {}) or {}
+                xhttp_opts = p.get("xhttp-opts", {}) or {}
                 servername = p.get("servername", "") or p.get("sni", "")
+                alpn_raw = p.get("alpn", [])
+                alpn_str = ",".join(alpn_raw if isinstance(alpn_raw, list) else [alpn_raw]) if alpn_raw else ""
 
                 vmess_obj = {
                     "v": "2", "ps": name, "add": server, "port": str(port),
@@ -140,15 +250,22 @@ def parse_clash_yaml(text):
                     "net": network, "type": "none",
                     "tls": "tls" if tls else "",
                     "sni": servername,
+                    "alpn": alpn_str,
                 }
                 if network == "ws":
                     vmess_obj["path"] = ws_opts.get("path", "/")
                     vmess_obj["host"] = (ws_opts.get("headers") or {}).get("Host", "")
                 elif network == "grpc":
                     vmess_obj["path"] = grpc_opts.get("grpc-service-name", "")
+                elif network == "xhttp":
+                    vmess_obj["path"] = xhttp_opts.get("path", "/")
+                    vmess_obj["host"] = xhttp_opts.get("host", "")
 
                 encoded = base64.b64encode(json.dumps(vmess_obj, ensure_ascii=False).encode()).decode()
                 links.append(f"vmess://{encoded}")
+                tcp_link = _h3_to_tcp_link(links[-1])
+                if tcp_link:
+                    links.append(tcp_link)
 
             elif ptype == "trojan":
                 password = p.get("password", "")
@@ -156,13 +273,18 @@ def parse_clash_yaml(text):
                 network = p.get("network", "tcp")
                 ws_opts = p.get("ws-opts", {}) or {}
                 grpc_opts = p.get("grpc-opts", {}) or {}
+                xhttp_opts = p.get("xhttp-opts", {}) or {}
                 fp = p.get("client-fingerprint", "")
+                alpn_raw = p.get("alpn", [])
+                alpn_str = ",".join(alpn_raw if isinstance(alpn_raw, list) else [alpn_raw]) if alpn_raw else ""
 
                 params = {}
                 if sni:
                     params["sni"] = sni
                 if fp:
                     params["fp"] = fp
+                if alpn_str:
+                    params["alpn"] = alpn_str
                 if network == "ws":
                     params["type"] = "ws"
                     params["path"] = ws_opts.get("path", "/")
@@ -172,8 +294,16 @@ def parse_clash_yaml(text):
                 elif network == "grpc":
                     params["type"] = "grpc"
                     params["serviceName"] = grpc_opts.get("grpc-service-name", "")
+                elif network == "xhttp":
+                    params["type"] = "xhttp"
+                    params["path"] = xhttp_opts.get("path", "/")
+                    if xhttp_opts.get("host"):
+                        params["host"] = xhttp_opts["host"]
 
-                links.append(clean_link(f"trojan://{password}@{server}:{port}?{_qs(params)}#{name}"))
+                links.append(clean_link(f"trojan://{password}@{server}:{port}?{_qs(params)}#{name}", "trojan"))
+                tcp_link = _h3_to_tcp_link(links[-1])
+                if tcp_link:
+                    links.append(tcp_link)
 
             elif ptype in ("ss", "shadowsocks"):
                 method = p.get("cipher", "")
@@ -187,7 +317,7 @@ def parse_clash_yaml(text):
                     if plugin_opts:
                         opts_str = ";".join(f"{k}={v}" for k, v in plugin_opts.items())
                         params["plugin-opts"] = opts_str
-                links.append(clean_link(f"ss://{userinfo}@{server}:{port}?{_qs(params)}#{name}"))
+                links.append(clean_link(f"ss://{userinfo}@{server}:{port}?{_qs(params)}#{name}", "ss"))
 
             elif ptype in ("hysteria2", "hy2"):
                 password = p.get("password", "")
@@ -201,7 +331,8 @@ def parse_clash_yaml(text):
                     params["obfs"] = obfs
                 if obfs_password:
                     params["obfs-password"] = obfs_password
-                links.append(clean_link(f"hy2://{password}@{server}:{port}?{_qs(params)}#{name}"))
+                links.append(clean_link(f"hy2://{password}@{server}:{port}?{_qs(params)}#{name} [UDP]", "hy2"))
+                links.append(clean_link(f"hy2://{password}@{server}:{port}?{_qs(params)}#{name} [TCP]", "hy2"))
 
             elif ptype == "hysteria":
                 auth = p.get("auth-str", "") or p.get("auth_str", "")
@@ -209,6 +340,7 @@ def parse_clash_yaml(text):
                 down = p.get("down", "") or p.get("down-speed", "")
                 sni = p.get("sni", "")
                 obfs = p.get("obfs", "")
+                protocol = p.get("protocol", "udp")
                 params = {}
                 if auth:
                     params["auth"] = auth
@@ -220,7 +352,13 @@ def parse_clash_yaml(text):
                     params["peer"] = sni
                 if obfs:
                     params["obfs"] = obfs
-                links.append(clean_link(f"hysteria://{server}:{port}?{_qs(params)}#{name}"))
+                if protocol and protocol != "udp":
+                    params["protocol"] = protocol
+                links.append(clean_link(f"hysteria://{server}:{port}?{_qs(params)}#{name}", "hysteria"))
+                if protocol in ("udp", ""):
+                    params_tcp = dict(params)
+                    params_tcp["protocol"] = "faketcp"
+                    links.append(clean_link(f"hysteria://{server}:{port}?{_qs(params_tcp)}#{name} [TCP]", "hysteria"))
 
             elif ptype == "tuic":
                 uuid = p.get("uuid", "")
@@ -232,7 +370,7 @@ def parse_clash_yaml(text):
                     params["sni"] = sni
                 if congestion:
                     params["congestion_control"] = congestion
-                links.append(clean_link(f"tuic://{uuid}:{password}@{server}:{port}?{_qs(params)}#{name}"))
+                links.append(clean_link(f"tuic://{uuid}:{password}@{server}:{port}?{_qs(params)}#{name} [UDP]", "tuic"))
 
             elif ptype in ("wireguard", "wg"):
                 private_key = p.get("private-key", "")
@@ -252,7 +390,7 @@ def parse_clash_yaml(text):
                     params["dns"] = dns if isinstance(dns, str) else ",".join(str(d) for d in dns)
                 if mtu:
                     params["mtu"] = mtu
-                links.append(clean_link(f"wireguard://{private_key}@{server}:{port}?{_qs(params)}#{name}"))
+                links.append(clean_link(f"wireguard://{private_key}@{server}:{port}?{_qs(params)}#{name}", "wireguard"))
 
         except Exception as e:
             print(f"[WARN] proxy parse error ({ptype} {name}): {e}", file=sys.stderr)
@@ -305,6 +443,9 @@ def parse_singbox_json(text):
                     fp = utls.get("fingerprint", "")
                     if fp:
                         params["fp"] = fp
+                alpn_list = tls_obj.get("alpn", []) if tls_obj else []
+                if alpn_list:
+                    params["alpn"] = ",".join(alpn_list)
                 if network == "ws":
                     params["path"] = transport.get("path", "/")
                     headers = transport.get("headers", {}) or {}
@@ -312,7 +453,16 @@ def parse_singbox_json(text):
                         params["host"] = headers["Host"]
                 elif network == "grpc":
                     params["serviceName"] = transport.get("service_name", "")
-                links.append(clean_link(f"vless://{uuid}@{server}:{port}?{_qs(params)}#{tag}"))
+                elif network == "xhttp":
+                    params["path"] = transport.get("path", "/")
+                    if transport.get("host"):
+                        params["host"] = transport["host"]
+                    if transport.get("mode"):
+                        params["mode"] = transport["mode"]
+                links.append(clean_link(f"vless://{uuid}@{server}:{port}?{_qs(params)}#{tag}", "vless"))
+                tcp_link = _h3_to_tcp_link(links[-1])
+                if tcp_link:
+                    links.append(tcp_link)
 
             elif obtype == "vmess":
                 uuid = ob.get("uuid", "")
@@ -339,13 +489,16 @@ def parse_singbox_json(text):
                 params = {}
                 if sni:
                     params["sni"] = sni
-                links.append(clean_link(f"trojan://{password}@{server}:{port}?{_qs(params)}#{tag}"))
+                links.append(clean_link(f"trojan://{password}@{server}:{port}?{_qs(params)}#{tag}", "trojan"))
+                tcp_link = _h3_to_tcp_link(links[-1])
+                if tcp_link:
+                    links.append(tcp_link)
 
             elif obtype == "shadowsocks":
                 method = ob.get("method", "")
                 password = ob.get("password", "")
                 userinfo = base64.b64encode(f"{method}:{password}".encode()).decode()
-                links.append(clean_link(f"ss://{userinfo}@{server}:{port}#{tag}"))
+                links.append(clean_link(f"ss://{userinfo}@{server}:{port}#{tag}", "ss"))
 
             elif obtype == "hysteria2":
                 password = ob.get("password", "")
@@ -358,7 +511,8 @@ def parse_singbox_json(text):
                 if obfs_obj.get("type"):
                     params["obfs"] = obfs_obj["type"]
                     params["obfs-password"] = obfs_obj.get("password", "")
-                links.append(clean_link(f"hy2://{password}@{server}:{port}?{_qs(params)}#{tag}"))
+                links.append(clean_link(f"hy2://{password}@{server}:{port}?{_qs(params)}#{tag} [UDP]", "hy2"))
+                links.append(clean_link(f"hy2://{password}@{server}:{port}?{_qs(params)}#{tag} [TCP]", "hy2"))
 
             elif obtype == "tuic":
                 uuid = ob.get("uuid", "")
@@ -371,7 +525,7 @@ def parse_singbox_json(text):
                     params["sni"] = sni
                 if congestion:
                     params["congestion_control"] = congestion
-                links.append(clean_link(f"tuic://{uuid}:{password}@{server}:{port}?{_qs(params)}#{tag}"))
+                links.append(clean_link(f"tuic://{uuid}:{password}@{server}:{port}?{_qs(params)}#{tag} [UDP]", "tuic"))
 
             elif obtype == "wireguard":
                 private_key = ob.get("private_key", "")
@@ -395,7 +549,7 @@ def parse_singbox_json(text):
                     params["dns"] = dns
                 if mtu:
                     params["mtu"] = mtu
-                links.append(clean_link(f"wireguard://{private_key}@{server}:{port}?{_qs(params)}#{tag}"))
+                links.append(clean_link(f"wireguard://{private_key}@{server}:{port}?{_qs(params)}#{tag}", "wireguard"))
 
         except Exception as e:
             print(f"[WARN] singbox parse error ({obtype} {tag}): {e}", file=sys.stderr)
