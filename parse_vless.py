@@ -30,7 +30,6 @@ SESSION.headers.update({
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.5",
-    "Accept-Encoding": "gzip, deflate, br",
     "Connection": "keep-alive",
 })
 
@@ -365,9 +364,10 @@ def detect_and_parse(content: str | bytes, url: str = "") -> list[str]:
     if stripped.startswith("{") or stripped.startswith("["):
         try:
             data = json.loads(content)
-            links = _walk_json(data)
-            if not links and isinstance(data, dict) and "outbounds" in data:
-                links = parse_singbox_json(content)
+            # try singbox parser first (handles both dict and list)
+            links = parse_singbox_json(content)
+            if not links:
+                links = _walk_json(data)
             if links:
                 return _dedup(links)
         except Exception:
@@ -688,6 +688,11 @@ def parse_singbox_json(text):
     try:
         data = json.loads(text)
     except Exception:
+        return links
+    if isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict) and "outbounds" in item:
+                links.extend(parse_singbox_json(json.dumps(item)))
         return links
     if not isinstance(data, dict):
         return links
