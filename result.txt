@@ -1,12 +1,6 @@
 vless://dummy@0.0.0.0:1?security=none&fp=chrome&type=tcp&packetEncoding=xudp&encryption=none#🇷🇺 РосТуннель
-vless://c6210586-6fd3-405a-905e-de7fb2d68d96@193.233.49.120:34046?type=tcp&encryption=none&security=reality&pbk=6qVBeg9qlJRuo_AIi2C-Dke58Z79uzvXQo38Jw5QsCw&fp=chrome&sni=www.vk.com&sid=de636ea175ff8ccc&spx=%2F&flow=xtls-rprx-vision#🔥 Умный
-vless://3f45dd2a-307c-44c8-8fad-c1462b682547@81.90.17.76:40015?type=tcp&encryption=none&security=reality&pbk=wukDRMx030hw_JBTR_kWP3aSdX5q9t-Wuei-_ZYk4x8&fp=chrome&sni=github.com&sid=cd&spx=%2F&flow=xtls-rprx-vision#🇵🇱 Польша
-hy2://rstnnl:OdAee0iXQALGJNhMVDnhA79WZoyqMse6@150.241.65.18:2026?insecure=0&sni=rstnnl.duckdns.org&obfs=salamander&obfs-password=3s1TcxUAhVlRLnrdgxkBnjEtdk9QilsV&pinSHA256=05:62:12:68:1A:F3:7D:1B:38:BE:89:04:7D:05:4B:54:42:54:CD:97:D4:11:B5:10:EF:A1:E5:9D:13:11:69:A9#🇸🇪 Швеция HY2
-vless://2d99a309-c652-43df-acf0-788275e5143f@ruw.hotservice.icu:443?type=tcp&security=reality&sni=ads.x5.ru&fp=qq&pbk=puS88LgswjRvNS44aBFGPr0YgA4rzKGv2of0DXTy5EA&flow=xtls-rprx-vision#🇷🇺 LTE
-vless://eb985aed-539d-07d0-98b5-335a5bb5b5ad@5.188.142.165:443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=tls&sni=anti-vpn.ru&alpn=h2
-vless://6cabb434-f480-478a-9586-a5667167eeb1@79.137.174.164:8443?type=xhttp&host=5post-gate-test.x5.ru&path=/api/maps&mode=auto&extra=%257B%250A%2520%2520%2522downloadSettings%2522%2520:%2520null
-vless://e928d85d-f223-0bb8-a1d2-a56e9fbd50e0@89.208.231.198:443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=tls&sni=anti-vpn.ru&alpn=h2
-vless://68b053e1-2e92-4180-b3c9-9a5cb50642b7@185.86.147.242:7443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=reality&fp=chrome&sni=max.ru&pbk=l1aZ57psAgXXvK_uYa4EUNWlZi91sBg7Cc8hC5pB3j0&sid=abcd1234#🇷🇺 LTE
+vless://3f45dd2a-307c-44c8-8fad-c1462b682547@fcandyshop.duckdns.org:40014?type=tcp&encryption=none&security=reality&pbk=K5ibYZL75htJY9W5PfajDvxdb59yiSLHYpfaEfxE1Ws&fp=chrome&sni=github.com&sid=cd&spx=%2F&flow=xtls-rprx-vision#🇫🇮 Финляндия
+hy2://rstnnl:OdAee0iXQALGJNhMVDnhA79WZoyqMse6@rstnnl.duckdns.org:2026?insecure=0&sni=rstnnl.duckdns.org&obfs=salamander&obfs-password=3s1TcxUAhVlRLnrdgxkBnjEtdk9QilsV&pinSHA256=05:62:12:68:1A:F3:7D:1B:38:BE:89:04:7D:05:4B:54:42:54:CD:97:D4:11:B5:10:EF:A1:E5:9D:13:11:69:A9#🇸🇪 Швеция HY2
 vless://eb985aed-539d-07d0-98b5-335a5bb5b5ad@109.120.188.27:443?flow=xtls-rprx-vision&encryption=none&type=tcp&security=tls&fp=qq&sni=anti-vpn.ru&alpn=h2
 vless://e1c3b1b5-5d8f-000a-a999-b442762dc245@89.208.223.111:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=sbrf-cdn342.ru&fp=random&pbk=OCRYYq4e92sQ-wWFRX6WX9pdvuFBWOqybLhpSiv3nFA&sid=111111&type=tcp&headerType=none#🇷🇺 LTE 2
 vless://a22f6494-f371-07d0-bad0-8df9594b8e45@89.208.229.14:443?flow=xtls-rprx-vision&encryption=none&type=tcp&security=tls&fp=qq&sni=anti-vpn.ru&alpn=h2
