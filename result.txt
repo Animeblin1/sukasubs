@@ -5,6 +5,7 @@ vless://e928d85d-f223-0bb8-a1d2-a56e9fbd50e0@109.120.188.27:443?security=tls&enc
 vless://572dd6b6-f28a-07d0-a125-473119ce08be@89.208.230.167:443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=tls&sni=anti-vpn.ru&alpn=h2
 vless://40759e42-d74b-4470-acc4-a580f264e860@89.208.231.13:443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=reality&fp=qq&sni=ads.x5.ru&pbk=AnpSb_YBd8V1zkEaxoq5z5QGaT_PnKSsVXJdlHW6KHg#🇷🇺 LTE
 vless://062cbab8-2dfb-4bdd-b7e5-816be08942db@84.201.156.156:443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=reality&fp=chrome&sni=yandex.ru&pbk=5NDQBeOG4yGXBwm5NTzUHwezxLbTiFhW4X061I4ykVk#🇷🇺 LTE
+vless://e928d85d-f223-07d0-a1d2-a56e9fbd50e0@5.188.142.165:443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=tls&sni=anti-vpn.ru&alpn=h2
 vless://001a44d7-69e6-07d0-8d11-828fe2119621@89.208.230.167:443?flow=xtls-rprx-vision&encryption=none&type=tcp&security=tls&fp=qq&sni=anti-vpn.ru#🇷🇺 LTE 1
 vless://e928d85d-f223-07d0-a1d2-a56e9fbd50e0@109.120.188.27:443?flow=xtls-rprx-vision&encryption=none&type=tcp&security=tls&fp=qq&sni=anti-vpn.ru&alpn=h2
 vless://572dd6b6-f28a-07d0-a125-473119ce08be@109.120.188.9:443?flow=xtls-rprx-vision&encryption=none&type=tcp&security=tls&fp=qq&sni=anti-vpn.ru&alpn=h2
