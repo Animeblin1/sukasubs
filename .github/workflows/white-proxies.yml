@@ -67,8 +67,11 @@ jobs:
 
       - name: Extract proxy links
         run: |
-          grep -oE '(vless|vmess|trojan|ss|ssr|hysteria2|hy2|tuic|wg)://[^[:space:]]+' raw.txt \
-            > white.txt || true
+          if base64 -d raw.txt > decoded.txt 2>/dev/null && grep -qE '(vless|vmess|trojan|ss|hysteria)://' decoded.txt; then
+            grep -oE '(vless|vmess|trojan|ss|ssr|hysteria2|hy2|tuic|wg)://[^[:space:]]+' decoded.txt > white.txt || true
+          else
+            grep -oE '(vless|vmess|trojan|ss|ssr|hysteria2|hy2|tuic|wg)://[^[:space:]]+' raw.txt > white.txt || true
+          fi
           echo "Extracted $(wc -l < white.txt) proxies"
 
       - name: Commit result
