@@ -1,6 +1,7 @@
 vless://dummy@0.0.0.0:1?security=none&fp=chrome&type=tcp&packetEncoding=xudp&encryption=none#🇷🇺 РосТуннель
-vless://e90eaf86-bb3e-4412-96e6-87dde637e9fb@rwebstore.dmtr.ru:45936?security=reality&sni=rwebstore.dmtr.ru&fp=chrome&pbk=ApAR2-HfdtmgIgSTAlAxA0-1hjtccyoLJkxJD8K5kmc&type=tcp&flow=xtls-rprx-vision&packetEncoding=xudp&encryption=none#🇩🇪 Германия
-vless://e90eaf86-bb3e-4412-96e6-87dde637e9fb@rwebstore.dmtr.ru:56538?security=reality&sni=rwebstore.dmtr.ru&fp=chrome&pbk=ApAR2-HfdtmgIgSTAlAxA0-1hjtccyoLJkxJD8K5kmc&sid=7cdb&type=tcp&flow=xtls-rprx-vision&packetEncoding=xudp&encryption=none#🇸🇪 Швеция
+vless://8daaaaf1-c69c-4b62-a3a1-58efa038cc27@rwebstore.dmtr.ru:56538?type=tcp&security=reality&pbk=ApAR2-HfdtmgIgSTAlAxA0-1hjtccyoLJkxJD8K5kmc&sid=2603&fp=chrome&sni=rwebstore.dmtr.ru&flow=xtls-rprx-vision#🇸🇪 Швеция
+vless://8daaaaf1-c69c-4b62-a3a1-58efa038cc27@rwebstore.dmtr.ru:45936?type=tcp&security=reality&pbk=ApAR2-HfdtmgIgSTAlAxA0-1hjtccyoLJkxJD8K5kmc&sid=b0358a&fp=chrome&sni=rwebstore.dmtr.ru&flow=xtls-rprx-vision#🇩🇪 Германия
+vless://8daaaaf1-c69c-4b62-a3a1-58efa038cc27@rwebstore.dmtr.ru:30226?type=tcp&security=reality&pbk=ApAR2-HfdtmgIgSTAlAxA0-1hjtccyoLJkxJD8K5kmc&sid=e3f69a4c&fp=chrome&sni=rwebstore.dmtr.ru&flow=xtls-rprx-vision#🇷🇺 Россия
 vless://1df7d8db-4150-4dfc-90a9-7f1f65af3574@51.250.101.214:443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=reality&fp=ios&sni=ads.x5.ru&pbk=YYf0Tb6sRq9txYo3NrMhahGusqiJJb7teGlAzMYpxz0&sid=5115d1ba7e9c78bb#🇷🇺 LTE
 vless://d08a63e7-dbea-4a36-a239-9f0b37a46b40@51.250.71.93:443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=reality&fp=safari&sni=ads.x5.ru&pbk=vTKyf5iqVUNQMjFJ6hzue665Ka3c-7hqVzy4zMzO3z8&sid=fbacbaea96b43f51&spx=/f4a86ce2faceccdf#🇷🇺 LTE
 vless://c88eb03a-5837-499a-aec1-24174a7d3805@193.233.250.167:7443?flow=xtls-rprx-vision&type=tcp&headerType=none&security=reality&fp=randomized&sni=max.ru&pbk=U3ykx7Zm4IARxw-TSQi7tp_7WW-8TuFi5XvTYHJpnjo&sid=39&spx=/#🇷🇺 LTE
