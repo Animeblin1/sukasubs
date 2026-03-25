@@ -1,1 +1,1 @@
-vless://850a44f3-dd78-48b7-b176-2d06ad5dc513@0.0.0.0:1?security=&type=tcp&headerType=&path=&host=#App%20not%20supported
+vless://063cec59-ca88-4523-9b6a-fa5e58cf7c39@0.0.0.0:1?security=&type=tcp&headerType=&path=&host=#App%20not%20supported
